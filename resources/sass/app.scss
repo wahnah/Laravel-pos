@@ -1,0 +1,141 @@
+// Fonts
+@import url("https://fonts.googleapis.com/css?family=Nunito");
+
+// Variables
+@import "variables";
+
+// Font Awesome
+$fa-font-path: "@fortawesome/fontawesome-free/webfonts";
+@import "@fortawesome/fontawesome-free/scss/fontawesome";
+@import "@fortawesome/fontawesome-free/scss/brands";
+@import "@fortawesome/fontawesome-free/scss/solid";
+
+// SweetAlert2
+@import "sweetalert2/dist/sweetalert2.min.css";
+
+// Bootstrap
+@import "bootstrap/scss/bootstrap";
+
+// AdminLTE
+@import "admin-lte/dist/css/adminlte.min.css";
+
+// DataTables
+@import 'datatables.net-bs4/css/dataTables.bootstrap4.min.css';
+
+.user-cart {
+    .card {
+        height: 360px;
+    }
+    .qty {
+        width: 45px;
+        float: left;
+    }
+}
+
+.fixed-section {
+    position: fixed;
+    top: 15;
+    right: 55;
+    width: 27%; /* Adjust the width as needed */
+    max-height: 100vh;
+    overflow-y: auto;
+    padding: 20px;
+    background-color: #fff; /* Adjust the background color as needed */
+    z-index: 1000; /* Set a high z-index to ensure it's above other elements */
+}
+
+.card table {
+    width: 100%;
+    margin-bottom: 0;
+    max-height: 357px; /* Adjust the maximum height as needed */
+    overflow-y: auto;
+    padding: 0; /* Remove any padding */
+    margin: 0;
+    display: inline-block;
+}
+
+.orderprod-section {
+    // Add a wrapper element and apply styles to it
+    .scrollable-wrapper {
+        overflow-y: auto;
+        max-height: 400px;
+    }
+
+    // Other styles for .orderprod-section
+    // ...
+}
+.order-product {
+    .item {
+        float: left;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        background: #fff;
+        margin: 0 4px 6px 4px;
+        img {
+            width: 100px;
+            height: 100px;
+            max-width: 100%;
+        }
+        h5 {
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .ribbon {
+            --f: 5px; /* control the folded part */
+            --r: 23px; /* control the ribbon shape */
+            --t: 5px; /* the top offset */
+            position: relative;
+            inset: var(--t) calc(-1 * var(--f)) auto auto;
+            padding: 0 10px var(--f) calc(10px + var(--r));
+            clip-path: polygon(
+              23px 0,
+              100% 0,
+              100% calc(100% - var(--f)),
+              calc(100% - var(--f)) 100%,
+              calc(100% - var(--f)) calc(100% - var(--f)),
+              23px calc(100% - var(--f)),
+              var(--r) calc(50% - var(--f) / 2)
+            );
+            background: #007bff;
+            box-shadow: 0 calc(-1 * var(--f)) 0 inset #0005;
+            color: white; /* Set text color to white */
+            font-size: 12px; /* Adjust the font size as needed */
+            text-align: right; /* Center the text */
+            line-height: 1.2; /* Adjust line height as needed */
+          }
+
+    }
+}
+
+.product-list {
+    .product-img {
+        max-width: 70px;
+        max-height: 70px;
+    }
+}
+
+.category-container {
+    display: flex;
+    flex-wrap: nowrap; /* Prevent wrapping to the next line */
+    overflow-x: auto;/* Enable horizontal scrolling if needed */
+    white-space: nowrap;
+  }
+
+  /* Add this to your CSS file */
+.category-item {
+    cursor: pointer;
+    padding: 5px 10px;
+    margin: 10px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    display: inline-block;
+    transition: background-color 0.3s ease;
+}
+
+.category-item:hover {
+    background-color: #e0e0e0;
+}
+
+
