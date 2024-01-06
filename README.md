@@ -1,11 +1,4 @@
-<<<<<<< HEAD
 # Laravel-pos
-=======
-<p align="center">
-    <h1 align="center">Laravel-POS</h1>
-</p>
-
->>>>>>> 4500fe4 (main commit)
 
 ## Installation
 
