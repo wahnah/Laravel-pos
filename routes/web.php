@@ -34,10 +34,13 @@ Route::prefix('admin')->middleware('auth')->group(function () {
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/orderscredlist', [OrderController::class, 'credlist'])->name('orders.credlist');
     Route::get('/ordersedit/{order_id}', [OrderController::class, 'edit'])->name('orders.edit');
+    Route::post('/order/{orderItemId}', [OrderController::class, 'updateOrderItem'])->name('orderItem.update');
     Route::get('/creceipt/{order_id}', [OrderController::class, 'creceipt'])->name('orders.creceipt');
     Route::get('/oreceipt/{order_id}', [OrderController::class, 'oreceipt'])->name('orders.oreceipt');
     Route::get('/orders/ordered', [OrderController::class, 'getAllOrderItems'])->name('orders.getAllOrderItems');
     Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
+    Route::get('/orderscreateCust/{order_id}', [OrderController::class, 'createCust'])->name('orders.createCust');
+    Route::post('/orderscustStore/{order_id}', [OrderController::class, 'custStore'])->name('orders.custStore');
     Route::post('/ordersupdate/{order_id}', [OrderController::class, 'update'])->name('orders.update');
     Route::post('/ordersupdatee/{order_id}', [OrderController::class, 'updatee'])->name('orders.updatee');
     Route::get('/orders/report', [OrderController::class, 'report'])->name('orders.report');
@@ -53,11 +56,16 @@ Route::prefix('admin')->middleware('auth')->group(function () {
     Route::get('/close-day', [ProductSnapshotController::class, 'closeDay'])->name('close-day');
     Route::get('/populateStockSheet', [ProductSnapshotController::class, 'populateStockSheet'])->name('stock.populateStockSheet');
     Route::get('/populateStockSheetReport', [ProductSnapshotController::class, 'populateStockSheetReport'])->name('stock.populateStockSheetReport');
+    Route::get('/dailyReport', [ProductSnapshotController::class, 'compareCloseQtyToPrevDay'])->name('stock.dailyReport');
+    Route::post('/yesterday-money', [ProductSnapshotController::class, 'moneyinfo']);
     Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
     Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
     Route::post('/cart/change-qty', [CartController::class, 'changeQty']);
     Route::delete('/cart/delete', [CartController::class, 'delete']);
     Route::delete('/cart/empty', [CartController::class, 'empty']);
     Route::get('/cart/customer/{customer_id}', [CartController::class, 'getCartItemsByCustomerId']);
+    Route::get('/cart/checkphysockcount', [CartController::class, 'dailyStockcount']);
+    Route::post('/cart/physockcount', [CartController::class, 'storeDailyStockcount']);
+    Route::get('/cart/check', [CartController::class, 'dailyStockcountprod']);
 
 });

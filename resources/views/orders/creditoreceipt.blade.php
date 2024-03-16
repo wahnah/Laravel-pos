@@ -3,17 +3,13 @@ $totalPrice = 0; // Initialize total price variable
 @endphp
 <div id="container">
     <div class="header">
-        <div class="logo">
-            <!-- Place your logo here -->
-            <img src="logo.png" alt="Logo" width="60" height="60">
-        </div>
-        <h1>{{config('settings.app_name')}}</h1>
+        Tax Invoice
     </div>
     <div class="info">
-        <p>Contact Us</p>
+        <h3>{{config('settings.app_name')}}</h3>
+        
         <p>
             Address: {{config('settings.address')}}<br>
-            Email: {{config('settings.email')}}<br>
             Phone: {{config('settings.phone')}}
         </p>
     </div>
@@ -32,7 +28,7 @@ $totalPrice = 0; // Initialize total price variable
                 <td>{{$orderitem->product->name}}</td>
                 <td>{{$orderitem->quantity}}</td>
                 <td>{{$orderitem->product->price}}</td>
-                <td>{{$orderitem->price}}</td>
+                <td>{{ number_format($orderitem->price, 2) }}</td>
             </tr>
             @php
     $totalPrice += $orderitem->price; // Add the current item's price to the total
@@ -40,28 +36,44 @@ $totalPrice = 0; // Initialize total price variable
             @endforeach
             <tr>
                 <td colspan="3">Total</td>
-                <td>ZK {{$totalPrice}}</td>
+                <td>{{ number_format($totalPrice, 2) }}</td>
             </tr>
         </tbody>
     </table>
+    <br>
+    <div class="contain">
+        {!! DNS1D::getBarcodeHTML("$order_id", 'CODABAR',2,50) !!}
+        <div style="text-align: center; margin-top: 3px;">
+    {{ $order_id }}
+</div>
+    </div>
+
     <div class="footer">
         <p>&copy; {{config('settings.app_name')}}</p>
-        <p>Serial: {{ rand(100000000, 999999999) }}</p>
         <p>{{ date('d/m/y H:i') }}</p>
+        
+
     </div>
 </div>
 <!-- Add a print button -->
 
 
 <script>
-window.addEventListener("afterprint", function() {
-    // This code runs after the print dialogue is closed
-    // Close the tab automatically
-    window.close();
-});
+    window.addEventListener("load", function() {
+  // Store the order ID for later use
+  var orderId = '{{ $order_id }}';
 
-// Trigger the print dialogue automatically when the page is loaded
-window.print();
+  // Print the receipt twice before redirecting
+  var numPrints = 2;
+  for (var i = 0; i < numPrints; i++) {
+    window.print();
+  }
+
+  // Redirect back to the previous page after printing
+  setTimeout(function() {
+    window.location.href = document.referrer; // Go back to the previous page
+  }, 2000); // Delay redirect for 2 seconds (adjust as needed)
+});
 </script>
 <style>
     body {
@@ -75,6 +87,8 @@ window.print();
         padding: 10px;
     }
     .header {
+        background-color: black;
+        color: white;
         text-align: center;
         font-size: 20px;
     }
@@ -88,12 +102,13 @@ window.print();
         margin-top: 10px;
     }
     .table th, .table td {
-        border: 1px solid #ddd;
+        border: 1px solid black;
         padding: 5px;
         text-align: center;
     }
     .table th {
-        background-color: #f2f2f2;
+        background-color: black;
+        color: white;
     }
     .total {
         font-size: 16px;
@@ -105,6 +120,11 @@ window.print();
         text-align: center;
         margin-top: 20px;
     }
+    .contain {
+            margin: 83px; /* Center the content horizontally */
+            margin-top: 5px;
+            margin-bottom: 5px; /* Adjust top margin as needed */
+        }
 </style>
 
 

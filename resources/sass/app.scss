@@ -45,20 +45,19 @@ $fa-font-path: "@fortawesome/fontawesome-free/webfonts";
 }
 
 .card table {
-    width: 100%;
+    
     margin-bottom: 0;
-    max-height: 357px; /* Adjust the maximum height as needed */
     overflow-y: auto;
     padding: 0; /* Remove any padding */
     margin: 0;
-    display: inline-block;
+    
 }
 
 .orderprod-section {
     // Add a wrapper element and apply styles to it
     .scrollable-wrapper {
         overflow-y: auto;
-        max-height: 400px;
+        max-height: 550px;
     }
 
     // Other styles for .orderprod-section

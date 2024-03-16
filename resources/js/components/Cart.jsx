@@ -293,7 +293,7 @@ class Cart extends Component {
             input: "number",
             inputValue: this.getTotal(this.state.cart),
             showCancelButton: true,
-            confirmButtonText: "Pay",
+            confirmButtonText: "Send",
             showLoaderOnConfirm: true,
             preConfirm: (amount) => {
                 return new Promise((resolve, reject) => {
@@ -346,7 +346,6 @@ class Cart extends Component {
         return (
             <div className="row">
                 <div className="col-md-6 col-lg-4">
-                <div className="fixed-section">
                     <div className="row mb-2">
                         <div className="col">
                             <form onSubmit={this.handleScanBarcode}>
@@ -386,43 +385,47 @@ class Cart extends Component {
                             </tr>
                         </thead>
                         <tbody>
-            {cart.map((c) => {
-                const quantity = c.pivot ? c.pivot.quantity : '';
+                            {cart.map((c) => {
+                                // Debugging: Log each item in the cart
+                                console.log("Cart Item:", c);
 
-                return (
-                    <tr key={c.id}>
-                        <td>{c.name}</td>
-                        <td>
-                            <input
-                                type="text"
-                                className="form-control form-control-sm qty"
-                                value={quantity}
-                                onChange={(event) =>
-                                    this.handleChangeQty(
-                                        c.id,
-                                        event.target.value
-                                    )
-                                }
-                            />
-                            <button
-                                className="btn btn-danger btn-sm"
-                                onClick={() =>
-                                    this.handleClickDelete(
-                                        c.id
-                                    )
-                                }
-                            >
-                                <i className="fas fa-trash"></i>
-                            </button>
-                        </td>
-                        <td className="text-right">
-                            {window.APP.currency_symbol}{" "}
-                            {(c.price * quantity).toFixed(2)}
-                        </td>
-                    </tr>
-                );
-            })}
-        </tbody>
+                                // Add a null check for c.pivot
+                                const quantity = c.pivot ? c.pivot.quantity : '';
+
+                                return (
+                                    <tr key={c.id}>
+                                        <td>{c.name}</td>
+                                        <td>
+                                            <input
+                                                type="text"
+                                                className="form-control form-control-sm qty"
+                                                value={quantity}
+                                                onChange={(event) =>
+                                                    this.handleChangeQty(
+                                                        c.id,
+                                                        event.target.value
+                                                    )
+                                                }
+                                            />
+                                            <button
+                                                className="btn btn-danger btn-sm"
+                                                onClick={() =>
+                                                    this.handleClickDelete(
+                                                        c.id
+                                                    )
+                                                }
+                                            >
+                                                <i className="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                        <td className="text-right">
+                                            {window.APP.currency_symbol}{" "}
+                                            {(c.price * quantity).toFixed(2)}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -454,7 +457,6 @@ class Cart extends Component {
                             >
                                 Submit
                             </button>
-                        </div>
                         </div>
                     </div>
                 </div>
@@ -553,5 +555,136 @@ class Cart extends Component {
 export default Cart;
 
 if (document.getElementById("cart")) {
-    ReactDOM.render(<Cart />, document.getElementById("cart"));
+    // Check if Physockcount exists for the current date
+    axios.get('/admin/cart/checkphysockcount').then(response => {
+        const physockcountExists = response.data.length > 0;
+        console.log("physockcountExists:", physockcountExists);
+
+        if (physockcountExists) {
+            console.log(physockcountExists);
+            // If Physockcount exists, render the Cart component
+            ReactDOM.render(<Cart />, document.getElementById("cart"));
+        }else {
+            // If Physockcount does not exist, display a modal with a list of products
+            axios.get('/admin/cart/check')
+                .then(response => {
+                    const products = response.data;
+        
+                    // Generate HTML for the table and form
+                    const tableHtml = `
+                        <form id="productForm">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${products.map(product => `
+                                        <tr key="${product.id}">
+                                            <td>${product.name}</td>
+                                            <td><input type="number" name="product[${product.id}]" value="0" /></td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </form>
+                    `;
+        
+                    // Show SweetAlert modal with the table and form
+                    Swal.fire({
+                        title: 'Enter stock count ',
+                        html: tableHtml,
+                        showCancelButton: true,
+                        cancelButtonText: 'Cancel',
+                        confirmButtonText: 'Submit',
+                        reverseButtons: true
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Handle the submission of form data
+                            const formData = new FormData(document.getElementById('productForm'));
+                            console.log(formData);
+                            const formDataJson = {};
+                            for (let pair of formData.entries()) {
+                                formDataJson[pair[0]] = pair[1];
+                                console.log(`Key: ${pair[0]}, Value: ${pair[1]}`);
+
+                            }
+                                console.log(formDataJson);
+                            // Send the form data to the backend for further processing
+                            axios.post('/admin/cart/physockcount', formDataJson)
+    .then(response => {
+        // Handle the response if needed
+        console.log('Form submitted successfully');
+        // Display the modal with payment form
+        Swal.fire({
+            title: 'Enter Yesterday\'s Payment Info',
+            html: `
+                <form id="paymentForm">
+                    <div class="form-group">
+                        <label for="cash">Cash Payments:</label>
+                        <input type="number" id="cash" name="cash" value="0" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="momo">Momo Payments:</label>
+                        <input type="number" id="momo" name="momo" value="0" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="banked">Card Payments:</label>
+                        <input type="number" id="banked" name="banked" value="0" class="form-control" required>
+                    </div>
+                </form>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Submit',
+            preConfirm: () => {
+                // Handle form submission
+                const formElement = document.getElementById('paymentForm');
+                const formDataa = new FormData(formElement);
+        
+                // Convert FormData to JSON
+                const formDataaJson = {};
+                for (let pair of formDataa.entries()) {
+                    formDataaJson[pair[0]] = pair[1];
+                    console.log(`Key: ${pair[0]}, Value: ${pair[1]}`);
+
+                }
+                    console.log(formDataaJson);
+        
+                // You can perform any additional processing here
+                // For example, send data to the server or perform validation
+        
+                // Send form data to the desired endpoint
+                return axios.post('/admin/yesterday-money', formDataaJson)
+                    .then(response => {
+                        // Handle the response if needed
+                        console.log('Payment information submitted successfully');
+                    })
+                    .catch(error => {
+                        console.error('Error submitting payment information:', error);
+                        throw new Error('Payment information submission failed');
+                    });
+            }
+        }).then(result => {
+            // Reload the page after handling the payment form
+            window.location.reload();
+        });
+    })
+    .catch(error => {
+        console.error('Error submitting form:', error);
+    });
+
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error("Error fetching products:", error);
+                });
+        }
+        
+        
+    }).catch(error => {
+        console.error("Error checking Physockcount:", error);
+    });
 }

@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\Customer;
 use App\Models\OrderItem;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 
 class HomeController extends Controller
@@ -33,9 +34,14 @@ class HomeController extends Controller
             $orders = Order::with(['items', 'payments'])->get();
         $customers_count = Customer::count();
 
+        $yesterday = Carbon::yesterday()->toDateString();
+
+        
+        $orders_count = Order::whereDate('created_at', $yesterday)->count();
+
         return view('home', [
-            'orders_count' => $orders->count(),
-            'income' => OrderItem::sum('price'),
+            'orders_count' => $orders_count,
+            'income' => OrderItem::whereDate('created_at', $yesterday)->sum('price'),
             'income_today' => $orders->where('created_at', '>=', date('Y-m-d').' 00:00:00')->map(function($i) {
                 if($i->receivedAmount() > $i->total()) {
                     return $i->total();

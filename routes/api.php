@@ -21,3 +21,5 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 // routes/api.php
 Route::get('/products/{categoryId}', [ProductController::class, 'getProductsByCategory']);
 
+
+

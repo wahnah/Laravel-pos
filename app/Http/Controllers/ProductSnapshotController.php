@@ -8,9 +8,12 @@ use App\Models\Product;
 use App\Models\Order;
 use App\Models\ProductSnapshot;
 use App\Models\DaySnapshot;
+use App\Models\Phystockcount;
+use App\Models\Cashinginfo;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class ProductSnapshotController extends Controller
 {
@@ -261,6 +264,128 @@ public function populateStockSheetReport(Request $request)
         'orders' => $orders, // Include total profit in the view data
     ]);
 }
+
+public function compareCloseQtyToPrevDay()
+{
+    // Get the current date
+    $currentDate = Carbon::today()->toDateString();
+
+    // Get the previous date
+    $prevDate = Carbon::yesterday()->toDateString();
+
+
+    // Retrieve product data
+    $data = DB::table('product_snapshots')
+        ->join('day_snapshots', function ($join) {
+            $join->on('product_snapshots.product_id', '=', 'day_snapshots.product_id')
+                ->on('product_snapshots.date', '=', 'day_snapshots.date');
+        })
+        ->join('products', 'product_snapshots.product_id', '=', 'products.id')
+        ->select(
+            'product_snapshots.product_id',
+            'products.name',
+            'product_snapshots.quantity as open_qty',
+            'day_snapshots.restock_quantity',
+            'day_snapshots.order_quantity as sold_qty'
+        )
+        ->where('product_snapshots.date', $currentDate)
+        ->get();
+
+    // Prepare data for display
+    $displayData = [];
+    foreach ($data as $entry) {
+        // Calculate close quantity for the current day
+        $closeQty = $entry->open_qty + $entry->restock_quantity - $entry->sold_qty;
+
+        // Get the previous day's close quantity from Phystockcount table
+        $prevCloseQty = Phystockcount::where('product_id', $entry->product_id)
+            ->where('date', $currentDate)
+            ->value('pre_close_qty');
+
+        
+        // Calculate the unsigned difference
+        $difference = abs($closeQty - $prevCloseQty);
+
+        // Add data to the display array
+        $displayData[] = [
+            'product_id' => $entry->product_id,
+            'product_name' => $entry->name,
+            'close_qty_current_day' => $closeQty,
+            'pre_close_qty_previous_day' => $prevCloseQty,
+            'unsigned_difference' => $difference,
+        ];
+    }
+
+    // Get yesterday's date
+    $yesterday = Carbon::yesterday()->toDateString();
+
+    // Retrieve orders with credit field equal to 0 created at yesterday's date
+    $orders = Order::where('credit', 0)
+                    ->whereDate('created_at', $yesterday)
+                    ->get();
+
+    $orderss = Order::whereDate('created_at', $yesterday)
+                    ->get();
+
+    // Calculate the total sum of prices from order items for these orders
+    $totalPriceSumm = 0;
+    $totalPriceSum = 0;
+    foreach ($orders as $order) {
+        $totalPriceSum += $order->items()->sum('price');
+    }
+
+    foreach ($orderss as $order) {
+        $totalPriceSumm += $order->items()->sum('price');
+    }
+
+    // Retrieve cashing information for yesterday
+    $cashinginfo = Cashinginfo::whereDate('date', $yesterday)->first();
+
+     if (!$cashinginfo) {
+        // Handle case where cashinginfo for yesterday is not found
+        // You might want to log this or display a message to the user
+        // For simplicity, let's assume default values for cash_at_hand, bank_deposit, and momo_payments
+        $cashinginfo = new Cashinginfo();
+        $cashinginfo->cash_at_hand = 0;
+        $cashinginfo->bank_deposit = 0;
+        $cashinginfo->momo_payments = 0;
+    }
+
+    // Calculate the total credit (totalPriceSum) and subtract it from the total amount
+    $totalAmount = $cashinginfo->cash_at_hand + $cashinginfo->bank_deposit + $cashinginfo->momo_payments + $totalPriceSum;
+
+    $diff = $totalPriceSumm - $totalAmount;
+
+    $products = Product::where('quantity', '<', 10)->get();
+
+    // Pass the data to the view
+    return view('orders.dailyReports', ['displayData' => $displayData, 'products' => $products, 'diff' => $diff,
+    'total_amount' => $totalAmount,
+    'total_amount_all' => $totalPriceSumm]);
+}
+
+public function moneyinfo(Request $request)
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'cash' => 'required|numeric',
+            'momo' => 'required|numeric',
+            'banked' => 'required|numeric',
+        ]);
+
+        // Create a new Cashinginfo instance and populate it with the request data
+        $cashinginfo = new Cashinginfo();
+        $cashinginfo->date = now()->toDateString(); // Assuming yesterday's date
+        $cashinginfo->cash_at_hand = $request->cash;
+        $cashinginfo->momo_payments = $request->momo;
+        $cashinginfo->direct_banked_transactions = $request->banked;
+
+        // Save the new Cashinginfo record
+        $cashinginfo->save();
+
+        // Optionally, you can return a response to indicate success or failure
+        return response()->json(['message' => 'Yesterday\'s payment information recorded successfully'], 201);
+    }
 
 
 

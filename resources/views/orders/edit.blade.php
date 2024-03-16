@@ -35,35 +35,6 @@
                 @enderror
             </div>
 
-            <!-- Modal for new customer -->
-            <div class="modal fade" id="newCustomerModal" tabindex="-1" role="dialog" aria-labelledby="newCustomerModalLabel" aria-hidden="true">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="newCustomerModalLabel">Add New Customer</h5>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            <!-- Add fields for new customer (e.g., first_name, last_name, etc.) -->
-                            <div class="form-group">
-                                <label for="new_first_name">First Name</label>
-                                <input type="text" name="new_first_name" class="form-control" id="new_first_name" value="{{ old('new_first_name') }}">
-                            </div>
-                            <div class="form-group">
-                                <label for="new_last_name">Last Name</label>
-                                <input type="text" name="new_last_name" class="form-control" id="new_last_name" value="{{ old('new_last_name') }}">
-                            </div>
-                            <!-- Add more fields as needed -->
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                            <button id="saveChangesButton" type="button" class="btn btn-primary">Save Changes</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <div class="form-group">
                 <label for="credit">Order status</label>
@@ -81,78 +52,148 @@
             <button class="btn btn-primary" type="submit">Update</button>
         </form>
 
-
-
-
-        <br/>
-        <br/>
-        <br/>
-
-        <h4>Order Items</h4> <!-- Added table title -->
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Item</th>
-                    <th>Qty</th>
-                    <th>Unit Price</th>
-                    <th>Subtotal</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($orderItems as $orderitem)
-                <tr>
-                    <td>{{$orderitem->product->name}}</td>
-                    <td>{{$orderitem->quantity}}</td>
-                    <td>{{$orderitem->product->price}}</td>
-                    <td>{{$orderitem->price}}</td>
-                </tr>
-                @endforeach
-                <tr>
-                    <td colspan="3">Total</td>
-                    <td>ZK {{$totalPrice}}</td>
-                </tr>
-            </tbody>
-        </table>
     </div>
 </div>
 
+<br/>
+<br/>
+<br/>
+<div class="card">
+    <div class="card-body">
+    <div class="modal fade" id="actionModal" tabindex="-1" role="dialog" aria-labelledby="actionModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form id="updateOrderItemForm" method="POST" action="'{{ route('orderItem.update', ['orderItemId' => 'orderItemId']) }}'">
+                @csrf
+                <!-- Hidden input field to hold the order item ID -->
+                <input type="hidden" name="order_item_id" id="order_item_id">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="actionModalLabel">Product Name</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Quantity adjustment -->
+                    <div class="form-group">
+                        <label for="quantity">Quantity:</label>
+                        <input type="number" class="form-control" id="quantity" name="quantity" value="1">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<h4>Order Items</h4>
+@auth
+        @if(auth()->user()->role == 0)
+<div class="table-responsive">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th>Qty</th>
+        <th>Unit Price</th>
+        <th>Subtotal</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      @foreach($orderItems as $orderItem)
+        <tr>
+          <td>{{$orderItem->product->name}}</td>
+          <td>
+            <form action="{{ route('orderItem.update', ['orderItemId' => $orderItem->id]) }}" method="POST">
+              @csrf
+              @method('POST')
+              <input type="number" name="newQuantity" value="{{$orderItem->quantity}}" class="form-control form-control-sm">
+              <button type="submit" class="btn btn-sm btn-success">Update</button>
+            </form>
+          </td>
+          <td>{{$orderItem->product->price}}</td>
+          <td>{{$orderItem->price}}</td>
+          <td>
+            <form action="{{ route('orderItem.update', ['orderItemId' => $orderItem->id]) }}" method="POST" class="d-inline">
+              @csrf
+              @method('DELETE')
+              <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+            </form>
+            <a href="{{ route('orderItem.update', ['orderItemId' => $orderItem->id]) }}" class="btn btn-sm btn-primary">Swap</a>
+          </td>
+        </tr>
+      @endforeach
+      <tr>
+        <td colspan="3">Total</td>
+        <td>ZK {{$totalPrice}}</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+@else
+<div class="table-responsive">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th>Qty</th>
+        <th>Unit Price</th>
+        <th>Subtotal</th>
+        
+      </tr>
+    </thead>
+    <tbody>
+      @foreach($orderItems as $orderItem)
+        <tr>
+          <td>{{$orderItem->product->name}}</td>
+          <td>
+            <form action="{{ route('orderItem.update', ['orderItemId' => $orderItem->id]) }}" method="POST">
+              @csrf
+              @method('POST')
+              <input type="number" name="newQuantity" value="{{$orderItem->quantity}}" class="form-control form-control-sm">
+              <button type="submit" class="btn btn-sm btn-success">Update</button>
+            </form>
+          </td>
+          <td>{{$orderItem->product->price}}</td>
+          <td>{{$orderItem->price}}</td>
+          
+        </tr>
+      @endforeach
+      <tr>
+        <td colspan="3">Total</td>
+        <td>ZK {{$totalPrice}}</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+@endif
+@endauth
+    </div>
+</div>
 @endsection
+
 @section('js')
 <script src="{{ asset('js/app.js') }}"></script>
-    <script src="{{ asset('plugins/sweetalert2/sweetalert2.min.js') }}"></script>
+<script src="{{ asset('plugins/sweetalert2/sweetalert2.min.js') }}"></script>
 
-    <script>
-        document.getElementById('customer_id').addEventListener('change', function () {
-            var selectedOption = this.options[this.selectedIndex].value;
-            var newCustomerModal = document.getElementById('newCustomerModal');
+<script>
+    document.getElementById('customer_id').addEventListener('change', function () {
+        var selectedOption = this.options[this.selectedIndex].value;
+        var newCustomerModal = document.getElementById('newCustomerModal');
 
-            if (selectedOption === 'new') {
-                $('#newCustomerModal').modal('show');
-            } else {
-                $('#newCustomerModal').modal('hide');
-            }
-        });
-
-        $('#saveChangesButton').on('click', function () {
-    var modalForm = $('#newCustomerModal').find('form');
-    var formData = modalForm.serialize(); // Serialize the form data
-    var csrfToken = $('meta[name="csrf-token"]').attr('content'); // Get the CSRF token
-
-    $.ajax({
-        type: 'POST',
-        url: '{{ route('customers.store') }}',
-        data: formData,
-        headers: {
-            'X-CSRF-TOKEN': csrfToken // Include the CSRF token in the headers
-        },
-        success: function (response) {
-            console.log(response);
-            $('#newCustomerModal').modal('hide');
-        },
-        error: function (error) {
-            console.error(error);
+        if (selectedOption === 'new') {
+            var order_id = '{{ $order_id }}'; // Echo the $order_id variable
+            var customerShowRoute = '{{ route('orders.createCust', ['order_id' => ':order_id']) }}';
+            customerShowRoute = customerShowRoute.replace(':order_id', order_id); // Replace placeholder with order_id
+            window.location.href = customerShowRoute;
         }
     });
-});
-    </script>
+
+</script>
 @endsection

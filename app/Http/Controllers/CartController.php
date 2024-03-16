@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\Phystockcount;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -214,6 +215,59 @@ public function empty(Request $request)
     });
 
     return response()->json($formattedCartItems);
+}
+
+public function dailyStockcountprod()
+{
+    
+    $products = Product::all();
+
+    return response()->json($products);
+}
+
+public function dailyStockcount()
+{
+    $currentDate = now()->toDateString();
+
+    $existingData = Phystockcount::where('date', $currentDate)->get();
+
+
+    return response()->json($existingData);
+}
+
+public function storeDailyStockcount(Request $request)
+{
+    
+        // Get the product data from the request
+        $productData = $request->all();
+    
+        // Define an array to store the product counts
+        $productCounts = [];
+    
+        // Loop through each key-value pair in the product data
+        foreach ($productData as $key => $value) {
+            // Extract the product ID from the key
+            $productId = str_replace('product[', '', $key); // Remove 'product['
+            $productId = rtrim($productId, ']'); // Remove ']'
+    
+            // Add the product ID and count to the product counts array
+            $productCounts[$productId] = $value;
+        }
+    
+        // Now $productCounts contains the product IDs as keys and their counts as values
+        // You can process this data further, such as storing it in the database
+    
+        // Example: Loop through each product and store the count in the database
+        foreach ($productCounts as $productId => $count) {
+            Phystockcount::create([
+                'product_id' => $productId,
+                'pre_close_qty' => $count,
+                'date' => now()->toDateString(),
+            ]);
+        }
+    
+    
+    return response()->json(['message' => 'Stock counts stored successfully'], 200);
 }
 
 

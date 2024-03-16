@@ -27,7 +27,7 @@
             <div class="form-group">
                 <label for="orderprice">Order Price</label>
                 <input type="text" name="orderprice" class="form-control @error('orderprice') is-invalid @enderror" id="orderprice"
-                    placeholder="orderprice" value="{{ old('orderprice') }}">
+                    placeholder="orderprice" value="{{ old('orderprice', $product->orderprice) }}">
                 @error('orderprice')
                 <span class="invalid-feedback" role="alert">
                     <strong>{{ $message }}</strong>
@@ -84,7 +84,7 @@
             <div class="form-group">
                 <label for="quantity">Quantity</label>
                 <input type="text" name="quantity" class="form-control @error('quantity') is-invalid @enderror"
-                    id="quantity" placeholder="Quantity" value="{{ old('quantity', $product->quantity) }}" readonly>
+                    id="quantity" placeholder="Quantity" value="{{ old('quantity', $product->quantity) }}">
                 @error('quantity')
                 <span class="invalid-feedback" role="alert">
                     <strong>{{ $message }}</strong>
@@ -124,7 +124,7 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="restockModalLabel">Restock Quantity</h5>
+                <h5 class="modal-title" id="restockModalLabel">Restock Quantity for:  {{$product->name}}</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -152,7 +152,7 @@
 @endsection
 
 @section('js')
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="{{ asset('js/app.js') }}"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 <script>
     $(document).ready(function () {

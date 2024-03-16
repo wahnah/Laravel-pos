@@ -10,7 +10,7 @@
             <div class="small-box bg-info">
               <div class="inner">
                   <h3>{{$orders_count}}</h3>
-                <p>Orders Count</p>
+                <p>Orders Count Yesterday</p>
               </div>
               <div class="icon">
                 <i class="ion ion-bag"></i>
@@ -24,7 +24,7 @@
             <div class="small-box bg-success">
               <div class="inner">
                   <h3>{{config('settings.currency_symbol')}} {{number_format($income, 2)}}</h3>
-                <p>Income</p>
+                <p>Income Yesterday</p>
               </div>
               <div class="icon">
                 <i class="ion ion-stats-bars"></i>

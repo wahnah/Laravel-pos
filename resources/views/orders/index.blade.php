@@ -3,31 +3,47 @@
 @section('title', 'Orders List')
 @section('content-header', 'Order List')
 @section('content-actions')
+@auth
+        @if(auth()->user()->role == 0)
     <a href="{{route('orders.credlist')}}" class="btn btn-primary">Credit</a>
     <a href="{{route('orders.getAllOrderItems')}}" class="btn btn-primary">Sales Reports</a>
     <a href="{{route('stock.populateStockSheet')}}" class="btn btn-primary">Stock Sheet</a>
+    <a href="{{route('stock.dailyReport')}}" class="btn btn-primary">daily report</a>
+
+    @else
+
+    <a href="{{route('orders.credlist')}}" class="btn btn-primary">Credit</a>
+
+    @endif
+@endauth
 @endsection
 
 @section('content')
 <div class="card">
     <div class="card-body">
+    <div class="col-md-10" >
+                
+                <form action="{{route('orders.index')}}">
+                    <div class="row">
+                        <div class="col-md-5">
+                            <input type="text" name="search" class="form-control" placeholder="Enter or Scan Order ID" />
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-outline-primary" type="submit">Search</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+</div>
+</div>
+<br>
+<div class="card">
+    <div class="card-body">
+        
         <div class="row">
             <div class="col-md-5"></div>
-            {{-- <div class="col-md-7">
-    <form action="{{route('orders.index')}}">
-        <div class="row">
-            <div class="col-md-5">
-                <input type="date" name="start_date" class="form-control" value="{{request('start_date')}}" />
-            </div>
-            <div class="col-md-5">
-                <input type="date" name="end_date" class="form-control" value="{{request('end_date')}}" />
-            </div>
-            <div class="col-md-2">
-                <button class="btn btn-outline-primary" type="submit">Submit</button>
-            </div>
-        </div>
-    </form>
-</div> --}}
+            
+
         </div>
         <table class="table">
             <thead>
@@ -72,17 +88,7 @@
                 </tr>
                 @endforeach
             </tbody>
-            <tfoot>
-                <tr>
-                    <th></th>
-                    <th></th>
-                    <th>{{ config('settings.currency_symbol') }} {{ number_format($total, 2) }}</th>
-                    <th>{{ config('settings.currency_symbol') }} {{ number_format($receivedAmount, 2) }}</th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                </tr>
-            </tfoot>
+        
         </table>
         {{ $orders->render() }}
     </div>

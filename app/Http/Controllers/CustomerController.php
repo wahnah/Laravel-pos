@@ -72,8 +72,28 @@ class CustomerController extends Controller
      * @param  \App\Models\Customer  $customer
      * @return \Illuminate\Http\Response
      */
-    public function show(Customer $customer)
+    public function show(CustomerStoreRequest $request)
     {
+        $avatar_path = '';
+
+        if ($request->hasFile('avatar')) {
+            $avatar_path = $request->file('avatar')->store('customers', 'public');
+        }
+
+        $customer = Customer::create([
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'address' => $request->address,
+            'avatar' => $avatar_path,
+            'user_id' => $request->user()->id,
+        ]);
+
+        if (!$customer) {
+            return redirect()->back()->with('error', 'Sorry, there\'re a problem while creating customer.');
+        }
+        return redirect()->route('customers.index')->with('success', 'Success, your customer have been created.');
     }
 
     /**

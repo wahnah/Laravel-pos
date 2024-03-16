@@ -3,9 +3,13 @@
 @section('title', 'Product List')
 @section('content-header', 'Product List')
 @section('content-actions')
+@auth
+        @if(auth()->user()->role == 0)
 <a href="{{route('products.create')}}" class="btn btn-primary">Create Product</a>
 <a href="{{route('category.category')}}" class="btn btn-primary">Create Category</a>
 <a href="{{route('restock.index')}}" class="btn btn-primary">Restock History</a>
+@endif
+@endauth
 @endsection
 @section('css')
 <link rel="stylesheet" href="{{ asset('plugins/sweetalert2/sweetalert2.min.css') }}">
