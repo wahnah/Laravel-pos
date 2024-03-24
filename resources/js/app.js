@@ -13,3 +13,4 @@ import './bootstrap';
  */
 
 import './components/Cart';
+import './components/MiniCart';

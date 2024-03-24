@@ -16,7 +16,7 @@ class SettingsSeeder extends Seeder
     {
         $data = [
             ['key' => 'app_name', 'value' => 'Laravel-POS'],
-            ['key' => 'currency_symbol', 'value' => '$'],
+            ['key' => 'currency_symbol', 'value' => 'ZK'],
             ['key' => 'address', 'value' => ''],
             ['key' => 'email', 'value' => ''],
             ['key' => 'phone', 'value' => '011111111'],

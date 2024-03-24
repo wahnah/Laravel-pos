@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\Phystockcount;
+use App\Models\Cashinginfo;
+use App\Models\OrderItem;
+use App\Models\DaySnapshot;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -54,6 +57,95 @@ class CartController extends Controller
 
     return view('cart.index');
 }
+
+
+public function minicart(Request $request, $orderItemId) {
+
+
+    $orderItem = OrderItem::find($orderItemId);
+
+    if ($request->wantsJson()) {
+        $data = [
+            'id' => $orderItem->id,
+            'prod_id' => $orderItem->product_id,
+            'prod_name' => $orderItem->product->name,
+            'quantity' => $orderItem->quantity,
+            'order_id' => $orderItem->order_id,
+        ];
+
+        return response()->json($data);
+    }
+
+    return view('cart.minicart', compact('orderItemId', 'orderItem'));
+}
+
+public function swap(Request $request)
+    {
+        // Access the content of swapItem from the request
+        $swapItem = $request->all();
+
+        // Perform any operations with swapItem
+        // For example, you can access pivot data like this:
+        $pivotData = $swapItem['pivot'];
+
+
+        $quantity = $pivotData['quantity'];
+        $productId = $pivotData['product_id'];
+        $orderItemId = $pivotData['orderitem_id'];
+        $orderId = $pivotData['order_id'];
+
+        Log::info($quantity);
+        Log::info($productId);
+        Log::info($orderItemId);
+        Log::info($orderId);
+
+        $repprod = Product::find($productId);
+        $orderItem = OrderItem::find($orderItemId);
+        $orderItemQuantity = $orderItem->quantity;
+        $product = $orderItem->product;
+        $dateString = $orderItem->created_at->toDateString();
+        //$dateTime = Carbon::parse($dateString);
+        $existingData = DaySnapshot::where('date', $dateString)
+                            ->where('product_id', $product->id) // Add this line for product_id filtering
+                            ->first();
+
+
+        $existingDatarepprod = DaySnapshot::where('date', $dateString)
+                            ->where('product_id', $productId) // Add this line for product_id filtering
+                            ->first();
+        if (!is_null($existingData) && !is_null($existingDatarepprod)) {
+            Log::info($existingData);
+
+                // Decrement product quantity
+                $product->quantity += $orderItemQuantity;
+                $existingData->order_quantity -= $orderItemQuantity;
+                $dayototall = $orderItemQuantity * $product->price;
+                $existingData->order_total -= $dayototall;
+                $repprod->quantity -= $quantity;
+                $total = $quantity * $repprod->price;
+                $existingDatarepprod->order_quantity += $quantity;
+                $existingDatarepprod->order_total += $total;
+            }
+
+        $orderItemnew = new OrderItem();
+
+        // Assuming you have properties like 'name', 'quantity', 'price', etc.
+        $orderItemnew->price = $quantity * $product->price;
+        $orderItemnew->quantity = $quantity;
+        $orderItemnew->order_id = $orderId;
+        $orderItemnew->product_id = $productId;
+
+        // Set other properties as needed
+
+        $orderItemnew->save();
+        $repprod->save();
+        $product->save();
+        $orderItem->delete();
+        $existingDatarepprod->save();
+        $existingData->save();
+
+        return response()->json(['message' => 'Swap operation successful']);
+    }
 
 
 
@@ -219,7 +311,7 @@ public function empty(Request $request)
 
 public function dailyStockcountprod()
 {
-    
+
     $products = Product::all();
 
     return response()->json($products);
@@ -235,28 +327,38 @@ public function dailyStockcount()
     return response()->json($existingData);
 }
 
+public function dailymoneyentry()
+{
+    $currentDate = now()->toDateString();
+
+    $existing = Cashinginfo::where('date', $currentDate)->get();
+
+
+    return response()->json($existing);
+}
+
 public function storeDailyStockcount(Request $request)
 {
-    
+
         // Get the product data from the request
         $productData = $request->all();
-    
+
         // Define an array to store the product counts
         $productCounts = [];
-    
+
         // Loop through each key-value pair in the product data
         foreach ($productData as $key => $value) {
             // Extract the product ID from the key
             $productId = str_replace('product[', '', $key); // Remove 'product['
             $productId = rtrim($productId, ']'); // Remove ']'
-    
+
             // Add the product ID and count to the product counts array
             $productCounts[$productId] = $value;
         }
-    
+
         // Now $productCounts contains the product IDs as keys and their counts as values
         // You can process this data further, such as storing it in the database
-    
+
         // Example: Loop through each product and store the count in the database
         foreach ($productCounts as $productId => $count) {
             Phystockcount::create([
@@ -265,8 +367,8 @@ public function storeDailyStockcount(Request $request)
                 'date' => now()->toDateString(),
             ]);
         }
-    
-    
+
+
     return response()->json(['message' => 'Stock counts stored successfully'], 200);
 }
 

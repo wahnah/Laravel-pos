@@ -13,9 +13,11 @@ use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use PDF;
 use Milon\Barcode\DNS1D; // For 1D barcodes like code39
 use Milon\Barcode\DNS2D; // For 2D barcodes like QR codes
+
 
 
 class OrderController extends Controller
@@ -25,7 +27,7 @@ class OrderController extends Controller
         if($request->search) {
             $orders = $orders->where('id', '=', $request->search);
         }
-       
+
         $orders = $orders->with(['items', 'payments', 'customer'])->latest()->paginate(10);
 
         $total = $orders->map(function($i) {
@@ -164,7 +166,7 @@ public function updatee(OrderUpdateRequest $request, $order_id)
 }
 public function updateOrderItem(Request $request, $orderItemId) {
 
-    
+
     $orderItem = OrderItem::find($orderItemId);
     $newQuantity = $request->input('newQuantity');
     $previousQuantity = $orderItem->quantity;
@@ -174,8 +176,8 @@ public function updateOrderItem(Request $request, $orderItemId) {
     $existingData = DaySnapshot::where('date', $dateString)
                             ->where('product_id', $product->id) // Add this line for product_id filtering
                             ->first();
-    
-    
+
+
     if (!is_null($existingData)) {
         if ($newQuantity > $previousQuantity) {
             // Increment product quantity
@@ -247,9 +249,11 @@ public function receipt(Request $request)
     $receivedAmount = $request->input('receivedAmount');
     $changeAmount = $request->input('changeAmount');
     $orderItems = OrderItem::where('order_id', $orderId)->get();
-    
-    
-    
+
+
+
+
+
     return view('receipt.receipt', compact('orderItems','receivedAmount', 'changeAmount', 'orderId'));
 }
 
@@ -366,4 +370,69 @@ public function createCust($order_id)
     ]);
 
 
-}}
+}
+public function deleteOrderItem(Request $request, $orderItemId)
+{
+    $orderItem = OrderItem::find($orderItemId);
+
+
+
+    $orderID = $orderItem->order_id;
+
+
+
+    // Count the number of OrderItems with the same order_id
+    $orderItemCount = OrderItem::where('order_id', $orderID)->count();
+
+    $orderItemQuantity = $orderItem->quantity;
+    $product = $orderItem->product;
+    $dateString = $orderItem->created_at->toDateString();
+    //$dateTime = Carbon::parse($dateString);
+    $existingData = DaySnapshot::where('date', $dateString)
+                        ->where('product_id', $product->id) // Add this line for product_id filtering
+                        ->first();
+if (!is_null($existingData)) {
+    if ($orderItemCount > 1) {
+        //dd($existingData);
+        // If there are more than one order items with the same order_id, delete only the order item
+        $product->quantity += $orderItemQuantity;
+        $existingData->order_quantity -= $orderItemQuantity;
+        $dayototall = $orderItemQuantity * $product->price;
+        $existingData->order_total -= $dayototall;
+        $product->save();
+        $existingData->save();
+        $orderItem->delete();
+    } else {
+        // If there is only one order item with the same order_id, delete both the order item and the order
+        $product->quantity += $orderItemQuantity;
+        $existingData->order_quantity -= $orderItemQuantity;
+        $dayototall = $orderItemQuantity * $product->price;
+        $existingData->order_total -= $dayototall;
+        $product->save();
+        $existingData->save();
+        $orderItem->delete();
+        // Assuming you have a relationship between OrderItem and Order
+        $order = Order::find($orderID);
+        if ($order) {
+            $order->delete();
+        }
+    }
+}
+
+    $orders = new Order();
+
+
+        $orders = $orders->with(['items', 'payments', 'customer'])->latest()->paginate(10);
+
+        $total = $orders->map(function($i) {
+            return $i->total();
+        })->sum();
+        $receivedAmount = $orders->map(function($i) {
+            return $i->receivedAmount();
+        })->sum();
+
+        return view('orders.index', compact('orders', 'total', 'receivedAmount'));
+}
+
+
+}

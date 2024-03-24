@@ -45,12 +45,13 @@ $fa-font-path: "@fortawesome/fontawesome-free/webfonts";
 }
 
 .card table {
-    
+
     margin-bottom: 0;
     overflow-y: auto;
+    overflow-x: auto;
     padding: 0; /* Remove any padding */
     margin: 0;
-    
+
 }
 
 .orderprod-section {

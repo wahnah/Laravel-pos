@@ -8,7 +8,7 @@
     <a href="{{route('orders.credlist')}}" class="btn btn-primary">Credit</a>
     <a href="{{route('orders.getAllOrderItems')}}" class="btn btn-primary">Sales Reports</a>
     <a href="{{route('stock.populateStockSheet')}}" class="btn btn-primary">Stock Sheet</a>
-    <a href="{{route('stock.dailyReport')}}" class="btn btn-primary">daily report</a>
+    {{--<a href="{{route('stock.dailyReport')}}" class="btn btn-primary">daily report</a>--}}
 
     @else
 
@@ -22,7 +22,7 @@
 <div class="card">
     <div class="card-body">
     <div class="col-md-10" >
-                
+
                 <form action="{{route('orders.index')}}">
                     <div class="row">
                         <div class="col-md-5">
@@ -39,10 +39,10 @@
 <br>
 <div class="card">
     <div class="card-body">
-        
+
         <div class="row">
             <div class="col-md-5"></div>
-            
+
 
         </div>
         <table class="table">
@@ -88,7 +88,7 @@
                 </tr>
                 @endforeach
             </tbody>
-        
+
         </table>
         {{ $orders->render() }}
     </div>

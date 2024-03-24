@@ -118,12 +118,12 @@
           <td>{{$orderItem->product->price}}</td>
           <td>{{$orderItem->price}}</td>
           <td>
-            <form action="{{ route('orderItem.update', ['orderItemId' => $orderItem->id]) }}" method="POST" class="d-inline">
+            <form action="{{ route('orderItem.delete', ['orderItemId' => $orderItem->id]) }}" method="POST" class="d-inline">
               @csrf
               @method('DELETE')
               <button type="submit" class="btn btn-sm btn-danger">Delete</button>
             </form>
-            <a href="{{ route('orderItem.update', ['orderItemId' => $orderItem->id]) }}" class="btn btn-sm btn-primary">Swap</a>
+            <a href="{{ route('cart.minicart', ['orderItemId' => $orderItem->id])  }}" class="btn btn-sm btn-primary">Swap</a>
           </td>
         </tr>
       @endforeach
@@ -144,7 +144,7 @@
         <th>Qty</th>
         <th>Unit Price</th>
         <th>Subtotal</th>
-        
+
       </tr>
     </thead>
     <tbody>
@@ -161,7 +161,7 @@
           </td>
           <td>{{$orderItem->product->price}}</td>
           <td>{{$orderItem->price}}</td>
-          
+
         </tr>
       @endforeach
       <tr>

@@ -1,8 +1,14 @@
-@extends('layouts.reportlay')
+<!doctype html>
 
-@section('title', 'Daily report')
-@section('content-header', 'Daily Report')
-@section('css')
+    <html lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <meta name="viewport"
+              content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>Daily Report</title>
+    </head>
+    <body>
 <link rel="stylesheet" href="{{ asset('plugins/sweetalert2/sweetalert2.min.css') }}">
 <style>
     /* Custom CSS for tables */
@@ -39,19 +45,11 @@
         margin-top: 20px;
     }
 </style>
-@endsection
-@section('content')
+
 <div class= "card">
     <div class="card-header">
         <h2 class="card-title">Daily report for</h2>
     </div>
-
-</div>
-
-<div class="print-buttons mb-2">
-
-    <button class="btn btn-primary" id="printButton">Print</button>
-    <a href="{{ route('stock.populateStockSheet') }}" class="btn btn-secondary">Back</a>
 
 </div>
 <div class="row">
@@ -64,18 +62,18 @@
                     <thead>
                         <tr>
                             <th>Product Name</th>
-                            <th>Close Qty (Previous Day)</th>
-                            <th>Pre Close Qty (Current Day)</th>
+                            <th>System Close Qty (Prev Day)</th>
+                            <th>Physical Close Qty (Cur Day)</th>
                             <th>Shortage</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach ($displayData as $data)
                         <tr>
-                            <td>{{ $data['product_name'] }}</td>
-                            <td>{{ $data['close_qty_current_day'] }}</td>
-                            <td>{{ $data['pre_close_qty_previous_day'] }}</td>
-                            <td>{{ $data['unsigned_difference'] }}</td>
+                            <td style="text-align: center;">{{ $data['product_name'] }}</td>
+                            <td style="text-align: center;">{{ $data['close_qty_current_day'] }}</td>
+                            <td style="text-align: center;">{{ $data['pre_close_qty_previous_day'] }}</td>
+                            <td style="text-align: center;">{{ $data['unsigned_difference'] }}</td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -83,22 +81,25 @@
             </div>
         </div>
     </div>
+
+    <br>
+    <br>
     <div class="col-md-4">
         <div class="card product-list">
             <div class="card-body">
-                <h1>Product Summary</h1>
+                <h1>Product Summary (Qty below 10)</h1>
                 <table class="table">
                     <thead>
                         <tr>
                             <th>Product Name</th>
-                            <th>Quantity</th>
+                            <th>Current Quantity</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach ($products as $product)
                         <tr>
-                            <td>{{ $product->name }}</td>
-                            <td>{{ $product->quantity }}</td>
+                            <td style="text-align: center;">{{ $product->name }}</td>
+                            <td style="text-align: center;">{{ $product->quantity }}</td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -106,23 +107,25 @@
             </div>
         </div>
     </div>
+    <br>
+    <br>
     <div class="col-md-4">
         <div class="card product-list">
             <div class="card-body">
-                <h1>Daily Summary</h1>
+                <h1>Daily Money Summary</h1>
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Total Amount</th>
-                            <th>Total Amount from Orders</th>
+                            <th>Total Amount(Cashier)</th>
+                            <th>Total Amount (system)</th>
                             <th>Difference</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td>{{ $total_amount }}</td>
-                            <td>{{ $total_amount_all }}</td>
-                            <td>{{ $diff }}</td>
+                            <td style="text-align: center;">{{ $total_amount }}</td>
+                            <td style="text-align: center;">{{ $total_amount_all }}</td>
+                            <td style="text-align: center;">{{ $diff }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -183,4 +186,5 @@
         }
     });
 </script>
-@endsection
+</body>
+</html>

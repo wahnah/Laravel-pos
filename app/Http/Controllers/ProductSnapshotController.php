@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use PDF;
+use Illuminate\Support\Facades\Mail;
 
 class ProductSnapshotController extends Controller
 {
@@ -38,15 +40,19 @@ class ProductSnapshotController extends Controller
 public function closeDay()
 {
     $currentDate = now()->toDateString();
-    Log::info('Current Date:', ['date' => $currentDate]);
+    Log::info('Current Date1:', ['date' => $currentDate]);
 
     // Check if data already exists for the current date
     $existingData = DaySnapshot::where('date', $currentDate)->get();
+    Log::info('Current data:', ['data' => $existingData->isNotEmpty()]);
 
     if ($existingData->isNotEmpty()) {
+
+
         // Update existing data based on product_id
         $existingData->each(function ($data) use ($currentDate) {
             $productId = $data->product_id;
+            Log::info('product id data:', ['data' => $productId]);
 
             $restocks = Restock::where('product_id', $productId)->whereDate('restock_date', $currentDate)->get();
             $restockQuantity = $restocks->sum('quantity_added');
@@ -267,6 +273,7 @@ public function populateStockSheetReport(Request $request)
 
 public function compareCloseQtyToPrevDay()
 {
+
     // Get the current date
     $currentDate = Carbon::today()->toDateString();
 
@@ -288,7 +295,7 @@ public function compareCloseQtyToPrevDay()
             'day_snapshots.restock_quantity',
             'day_snapshots.order_quantity as sold_qty'
         )
-        ->where('product_snapshots.date', $currentDate)
+        ->where('product_snapshots.date', $prevDate)
         ->get();
 
     // Prepare data for display
@@ -302,7 +309,7 @@ public function compareCloseQtyToPrevDay()
             ->where('date', $currentDate)
             ->value('pre_close_qty');
 
-        
+
         // Calculate the unsigned difference
         $difference = abs($closeQty - $prevCloseQty);
 
@@ -324,22 +331,28 @@ public function compareCloseQtyToPrevDay()
                     ->whereDate('created_at', $yesterday)
                     ->get();
 
-    $orderss = Order::whereDate('created_at', $yesterday)
-                    ->get();
+    $totalPriceSum = 0;
+    foreach ($orders as $order) {
+                $totalPriceSum += $order->items()->sum('price');
+                    }
+
+
+
+    $orderss = OrderItem::whereDate('created_at', $yesterday)->sum('price');
 
     // Calculate the total sum of prices from order items for these orders
     $totalPriceSumm = 0;
-    $totalPriceSum = 0;
-    foreach ($orders as $order) {
-        $totalPriceSum += $order->items()->sum('price');
-    }
 
-    foreach ($orderss as $order) {
-        $totalPriceSumm += $order->items()->sum('price');
-    }
+
+
+
+
+
+    $totalPriceSumm += $orderss;
+
 
     // Retrieve cashing information for yesterday
-    $cashinginfo = Cashinginfo::whereDate('date', $yesterday)->first();
+    $cashinginfo = Cashinginfo::whereDate('date', $currentDate)->first();
 
      if (!$cashinginfo) {
         // Handle case where cashinginfo for yesterday is not found
@@ -352,7 +365,7 @@ public function compareCloseQtyToPrevDay()
     }
 
     // Calculate the total credit (totalPriceSum) and subtract it from the total amount
-    $totalAmount = $cashinginfo->cash_at_hand + $cashinginfo->bank_deposit + $cashinginfo->momo_payments + $totalPriceSum;
+    $totalAmount = $cashinginfo->cash_at_hand + $cashinginfo->direct_banked_transactions + $cashinginfo->momo_payments + $totalPriceSum;
 
     $diff = $totalPriceSumm - $totalAmount;
 
@@ -362,6 +375,131 @@ public function compareCloseQtyToPrevDay()
     return view('orders.dailyReports', ['displayData' => $displayData, 'products' => $products, 'diff' => $diff,
     'total_amount' => $totalAmount,
     'total_amount_all' => $totalPriceSumm]);
+}
+
+
+
+public function generatePDFAndSendEmaildaily(Request $request)
+{
+    // Get the current date
+    $currentDate = Carbon::today()->toDateString();
+
+    // Get the previous date
+    $prevDate = Carbon::yesterday()->toDateString();
+
+
+    // Retrieve product data
+    $data = DB::table('product_snapshots')
+        ->join('day_snapshots', function ($join) {
+            $join->on('product_snapshots.product_id', '=', 'day_snapshots.product_id')
+                ->on('product_snapshots.date', '=', 'day_snapshots.date');
+        })
+        ->join('products', 'product_snapshots.product_id', '=', 'products.id')
+        ->select(
+            'product_snapshots.product_id',
+            'products.name',
+            'product_snapshots.quantity as open_qty',
+            'day_snapshots.restock_quantity',
+            'day_snapshots.order_quantity as sold_qty'
+        )
+        ->where('product_snapshots.date', $prevDate)
+        ->get();
+
+    // Prepare data for display
+    $displayData = [];
+    foreach ($data as $entry) {
+        // Calculate close quantity for the current day
+        $closeQty = $entry->open_qty + $entry->restock_quantity - $entry->sold_qty;
+
+        // Get the previous day's close quantity from Phystockcount table
+        $prevCloseQty = Phystockcount::where('product_id', $entry->product_id)
+            ->where('date', $currentDate)
+            ->value('pre_close_qty');
+
+
+        // Calculate the unsigned difference
+        $difference = abs($closeQty - $prevCloseQty);
+
+        // Add data to the display array
+        $displayData[] = [
+            'product_id' => $entry->product_id,
+            'product_name' => $entry->name,
+            'close_qty_current_day' => $closeQty,
+            'pre_close_qty_previous_day' => $prevCloseQty,
+            'unsigned_difference' => $difference,
+        ];
+    }
+
+    // Get yesterday's date
+    $yesterday = Carbon::yesterday()->toDateString();
+
+    // Retrieve orders with credit field equal to 0 created at yesterday's date
+    $orders = Order::where('credit', 0)
+                    ->whereDate('created_at', $yesterday)
+                    ->get();
+
+    $totalPriceSum = 0;
+    foreach ($orders as $order) {
+                $totalPriceSum += $order->items()->sum('price');
+                    }
+
+
+
+    $orderss = OrderItem::whereDate('created_at', $yesterday)->sum('price');
+
+    // Calculate the total sum of prices from order items for these orders
+    $totalPriceSumm = 0;
+
+
+
+
+
+
+    $totalPriceSumm += $orderss;
+
+
+    // Retrieve cashing information for yesterday
+    $cashinginfo = Cashinginfo::whereDate('date', $currentDate)->first();
+
+     if (!$cashinginfo) {
+        // Handle case where cashinginfo for yesterday is not found
+        // You might want to log this or display a message to the user
+        // For simplicity, let's assume default values for cash_at_hand, bank_deposit, and momo_payments
+        $cashinginfo = new Cashinginfo();
+        $cashinginfo->cash_at_hand = 0;
+        $cashinginfo->bank_deposit = 0;
+        $cashinginfo->momo_payments = 0;
+    }
+
+    // Calculate the total credit (totalPriceSum) and subtract it from the total amount
+    $totalAmount = $cashinginfo->cash_at_hand + $cashinginfo->direct_banked_transactions + $cashinginfo->momo_payments + $totalPriceSum;
+
+    $diff = $totalPriceSumm - $totalAmount;
+
+    $products = Product::where('quantity', '<', 10)->get();
+
+
+    // Generate PDF from the daily report view
+    $pdf = PDF::loadView('pdf.dailyreport', ['displayData' => $displayData, 'products' => $products, 'diff' => $diff, 'total_amount' => $totalAmount, 'total_amount_all' => $totalPriceSumm]);
+
+// Get the PDF content as a string
+$pdf_content = $pdf->output();
+
+
+
+// Send email with PDF attached
+Mail::send('emails.email-template', [], function ($message) use ($pdf_content, $yesterday) {
+    $subject = 'Daily Report for ' . $yesterday;
+    $message->to(config('settings.email'))
+            ->subject($subject)
+            ->attachData($pdf_content, 'Daily_Report.pdf', [
+                'mime' => 'application/pdf'
+            ]);
+});
+
+// No need to delete the temporary PDF file if it's generated in memory
+
+return redirect()->back()->with('message', 'PDF generated and email sent successfully.');
 }
 
 public function moneyinfo(Request $request)

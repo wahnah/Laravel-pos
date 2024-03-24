@@ -52,7 +52,6 @@ class Cart extends Component {
         this.loadCustomers();
         this.loadCategories();
     }
-
     loadCustomers() {
         axios.get(`/admin/customers`).then((res) => {
             const customers = res.data;
@@ -293,7 +292,7 @@ class Cart extends Component {
             input: "number",
             inputValue: this.getTotal(this.state.cart),
             showCancelButton: true,
-            confirmButtonText: "Send",
+            confirmButtonText: "Pay",
             showLoaderOnConfirm: true,
             preConfirm: (amount) => {
                 return new Promise((resolve, reject) => {
@@ -314,7 +313,7 @@ class Cart extends Component {
                                 this.handleCloseDay();
                                 this.openReceiptTab(orderId, receivedAmount, changeAmount);
 
-                                resolve({ orderId, receivedAmount });
+                                resolve({ orderId, receivedAmount, changeAmount});
                                 console.log(res);
                             })
                             .catch((err) => {
@@ -334,9 +333,15 @@ class Cart extends Component {
     openReceiptTab(orderId, receivedAmount, changeAmount) {
         // Include the receivedAmount and changeAmount as query parameters
         const receiptUrl = `/admin/orders/receipt?orderId=${orderId}&receivedAmount=${receivedAmount}&changeAmount=${changeAmount}`;
-        window.open(receiptUrl, '_blank');
 
-        window.location.reload();
+        // Open the receiptUrl in a new tab
+        const newTab = window.open(receiptUrl, '_blank');
+
+        // Listen for the load event on the new tab
+        newTab.onload = function() {
+            // Reload the current page once the new tab has finished loading
+            window.location.reload();
+        };
     }
 
     render() {
@@ -563,13 +568,81 @@ if (document.getElementById("cart")) {
         if (physockcountExists) {
             console.log(physockcountExists);
             // If Physockcount exists, render the Cart component
-            ReactDOM.render(<Cart />, document.getElementById("cart"));
+            axios.get('/admin/cart/checkdailymoneyentry').then(response => {
+                const moneyentry = response.data.length > 0;
+                console.log("moneyentry:", moneyentry);
+
+                if (moneyentry) {
+                    console.log(moneyentry);
+                    // If Physockcount exists, render the Cart component
+                    ReactDOM.render(<Cart />, document.getElementById("cart"));
+                }else {
+            // Display the modal with payment form
+            Swal.fire({
+                title: 'Enter Yesterday\'s Payment Info',
+                html: `
+                    <form id="paymentForm">
+                        <div class="form-group">
+                            <label for="cash">Cash Payments:</label>
+                            <input type="number" id="cash" name="cash" value="0" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="momo">Momo Payments:</label>
+                            <input type="number" id="momo" name="momo" value="0" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="banked">Card Payments:</label>
+                            <input type="number" id="banked" name="banked" value="0" class="form-control" required>
+                        </div>
+                    </form>
+                `,
+                confirmButtonText: 'Submit',
+                preConfirm: () => {
+                    // Handle form submission
+                    const formElement = document.getElementById('paymentForm');
+                    const formDataa = new FormData(formElement);
+
+                    // Convert FormData to JSON
+                    const formDataaJson = {};
+                    for (let pair of formDataa.entries()) {
+                        formDataaJson[pair[0]] = pair[1];
+                        console.log(`Key: ${pair[0]}, Value: ${pair[1]}`);
+
+                    }
+                        console.log(formDataaJson);
+
+                    // You can perform any additional processing here
+                    // For example, send data to the server or perform validation
+
+                    // Send form data to the desired endpoint
+                    return axios.post('/admin/yesterday-money', formDataaJson)
+                        .then(response => {
+                            // Handle the response if needed
+                            console.log('Payment information submitted successfully');
+                        })
+                        .catch(error => {
+                            console.error('Error submitting payment information:', error);
+                            throw new Error('Payment information submission failed');
+                        });
+                }
+            }).then(result => {
+
+                axios.get('/admin/dailyReportemail').then(response => {
+                    // Reload the page after handling the payment form
+                window.location.reload();
+                }).catch(error => {
+                    console.error("Error daily report email not sent:", error);
+                });
+
+            });
+                            }
+        });
         }else {
             // If Physockcount does not exist, display a modal with a list of products
             axios.get('/admin/cart/check')
                 .then(response => {
                     const products = response.data;
-        
+
                     // Generate HTML for the table and form
                     const tableHtml = `
                         <form id="productForm">
@@ -591,14 +664,13 @@ if (document.getElementById("cart")) {
                             </table>
                         </form>
                     `;
-        
+
                     // Show SweetAlert modal with the table and form
                     Swal.fire({
                         title: 'Enter stock count ',
                         html: tableHtml,
-                        showCancelButton: true,
-                        cancelButtonText: 'Cancel',
                         confirmButtonText: 'Submit',
+                        allowOutsideClick: false,
                         reverseButtons: true
                     }).then((result) => {
                         if (result.isConfirmed) {
@@ -617,60 +689,10 @@ if (document.getElementById("cart")) {
     .then(response => {
         // Handle the response if needed
         console.log('Form submitted successfully');
-        // Display the modal with payment form
-        Swal.fire({
-            title: 'Enter Yesterday\'s Payment Info',
-            html: `
-                <form id="paymentForm">
-                    <div class="form-group">
-                        <label for="cash">Cash Payments:</label>
-                        <input type="number" id="cash" name="cash" value="0" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="momo">Momo Payments:</label>
-                        <input type="number" id="momo" name="momo" value="0" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="banked">Card Payments:</label>
-                        <input type="number" id="banked" name="banked" value="0" class="form-control" required>
-                    </div>
-                </form>
-            `,
-            showCancelButton: true,
-            confirmButtonText: 'Submit',
-            preConfirm: () => {
-                // Handle form submission
-                const formElement = document.getElementById('paymentForm');
-                const formDataa = new FormData(formElement);
-        
-                // Convert FormData to JSON
-                const formDataaJson = {};
-                for (let pair of formDataa.entries()) {
-                    formDataaJson[pair[0]] = pair[1];
-                    console.log(`Key: ${pair[0]}, Value: ${pair[1]}`);
+        // Reload the page after handling the payment form
+        window.location.reload();
 
-                }
-                    console.log(formDataaJson);
-        
-                // You can perform any additional processing here
-                // For example, send data to the server or perform validation
-        
-                // Send form data to the desired endpoint
-                return axios.post('/admin/yesterday-money', formDataaJson)
-                    .then(response => {
-                        // Handle the response if needed
-                        console.log('Payment information submitted successfully');
-                    })
-                    .catch(error => {
-                        console.error('Error submitting payment information:', error);
-                        throw new Error('Payment information submission failed');
-                    });
-            }
-        }).then(result => {
-            // Reload the page after handling the payment form
-            window.location.reload();
-        });
-    })
+})
     .catch(error => {
         console.error('Error submitting form:', error);
     });
@@ -682,8 +704,8 @@ if (document.getElementById("cart")) {
                     console.error("Error fetching products:", error);
                 });
         }
-        
-        
+
+
     }).catch(error => {
         console.error("Error checking Physockcount:", error);
     });

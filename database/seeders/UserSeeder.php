@@ -20,7 +20,8 @@ class UserSeeder extends Seeder
             'first_name' => 'Admin',
             'last_name' => 'admin',
             'email'=>'admin@gmail.com',
-            'password' => bcrypt('admin123')
+            'password' => bcrypt('admin123'),
+            'role' => 0
         ]);
     }
 }
